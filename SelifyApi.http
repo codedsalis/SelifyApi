@@ -1,0 +1,6 @@
+@SelifyApi_HostAddress = http://localhost:5291
+
+GET {{SelifyApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
