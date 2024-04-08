@@ -1,10 +1,8 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SelifyApi.Data;
-using SelifyApi.Dtos;
 using SelifyApi.Entities;
 using SelifyApi.Interfaces;
+using SelifyApi.Requests;
 
 namespace SelifyApi.Services;
 
@@ -16,10 +14,17 @@ public class FoodService : IFoodService
         _context = context;
     }
 
-    public async Task Add(Food foodDto)
+    public async Task<Food> Add(CreateFoodRequest request)
     {
-        _context.Add(foodDto);
+        Food food = new Food{
+            Name = request.Name,
+            Price = request.Price,
+        };
+
+        _context.Foods.Add(food);
         await _context.SaveChangesAsync();
+
+        return food;
     }
 
     public async Task Delete(Guid id)
@@ -39,17 +44,17 @@ public class FoodService : IFoodService
         return await _context.Foods.ToListAsync();
     }
 
-    public async Task<Food> GetById(Guid id)
+    public async Task<Food?> GetById(Guid id)
     {
-        return await _context.Foods.FindAsync(id);
+        return await _context.Foods.FindAsync(id) ?? null;
     }
 
-    public async Task Update(Guid id, Food food)
+    public async Task Update(Guid id, UpdateFoodRequest request)
     {
         var existingFood = await _context.Foods.FindAsync(id) ?? throw new KeyNotFoundException($"Food with ID {id} not found");
 
-        existingFood.Name = food.Name;
-        existingFood.Price = food.Price;
+        existingFood.Name = request.Name;
+        existingFood.Price = request.Price;
         existingFood.UpdatedAt = DateTime.Now;
 
          await _context.SaveChangesAsync();

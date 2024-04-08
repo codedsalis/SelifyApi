@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SelifyApi.Data;
-using SelifyApi.Dtos;
 using SelifyApi.Entities;
 using SelifyApi.Interfaces;
-using SelifyApi.Services;
+using SelifyApi.Requests;
 
 namespace SelifyApi.Controllers;
 
@@ -39,25 +36,24 @@ public class FoodController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult> AddSingleFood([FromBody] Food foodDto)
+    public async Task<ActionResult> AddSingleFood([FromBody] CreateFoodRequest request)
     {
-        await _foodService.Add(foodDto);
+        Food food = await _foodService.Add(request);
 
-        return CreatedAtAction(nameof(GetFood), new { id = foodDto.Id }, foodDto);
+        return CreatedAtAction(nameof(GetFood), new { id = food.Id }, food);
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<Food>> UpdateSingleFood(Guid id, [FromBody] Food request)
+    public async Task<ActionResult<Food>> UpdateSingleFood(Guid id, [FromBody] UpdateFoodRequest request)
     {
         try {
             await _foodService.Update(id, request);
+            var food = await _foodService.GetById(id);
+            return Ok(food);
         } catch (KeyNotFoundException ex) {
             return BadRequest(ex.Message);
         }
 
-        var food = await _foodService.GetById(id);
-
-        return food;
     }
 
     [HttpDelete("{id}")]
