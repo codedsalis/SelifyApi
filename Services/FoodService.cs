@@ -21,7 +21,7 @@ public class FoodService : IFoodService
             Price = request.Price,
         };
 
-        _context.Foods.Add(food);
+        await _context.Foods.AddAsync(food);
         await _context.SaveChangesAsync();
 
         return food;
@@ -55,7 +55,7 @@ public class FoodService : IFoodService
 
         existingFood.Name = request.Name;
         existingFood.Price = request.Price;
-        existingFood.UpdatedAt = DateTime.Now;
+        existingFood.UpdatedAt = DateTime.UtcNow;
 
          await _context.SaveChangesAsync();
     }
