@@ -1,4 +1,4 @@
-using SelifyApi.Dtos;
+using System.Security.Claims;
 using SelifyApi.Entities;
 using SelifyApi.Requests;
 
@@ -6,9 +6,9 @@ namespace SelifyApi.Interfaces;
 
 public interface IFoodService
 {
-  Task<IEnumerable<Food>> GetAll();
-    Task<Food?> GetById(Guid id);
-    Task<Food> Add(CreateFoodRequest food);
-    Task Update(Guid id, UpdateFoodRequest request);
-    Task Delete(Guid id);
+  Task<IEnumerable<Food>> GetAllAsync();
+    Task<Food?> GetByIdAsync(Guid id);
+    Task<Food> AddAsync(CreateFoodRequest food, ClaimsPrincipal user);
+    Task UpdateAsync(Guid id, UpdateFoodRequest request);
+    Task DeleteAsync(Guid id);
 }

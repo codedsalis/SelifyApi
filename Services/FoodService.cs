@@ -1,4 +1,9 @@
+using System.Security.Claims;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using NuGet.Protocol;
 using SelifyApi.Data;
 using SelifyApi.Entities;
 using SelifyApi.Interfaces;
@@ -6,28 +11,32 @@ using SelifyApi.Requests;
 
 namespace SelifyApi.Services;
 
-public class FoodService : IFoodService
+public class FoodService(DataContext context, UserManager<User> userManager, IUserService userService, ILogger<FoodService> logger) : IFoodService
 {
-    private DataContext _context;
-    public FoodService(DataContext context)
+    private readonly DataContext _context = context;
+    private readonly UserManager<User> _userManager = userManager;
+
+    private readonly IUserService _userService = userService;
+    private readonly ILogger<FoodService> _logger = logger;
+
+    public async Task<Food> AddAsync(CreateFoodRequest request, ClaimsPrincipal userClaim)
     {
-        _context = context;
+        User? user = await _userService.GetUser(userClaim);
+
+            Food food = new()
+            {
+                Name = request.Name,
+                Price = request.Price,
+                UserId = Guid.Parse(user!.Id.ToString()),
+            };
+
+            await _context.Foods.AddAsync(food);
+            await _context.SaveChangesAsync();
+
+            return food;
     }
 
-    public async Task<Food> Add(CreateFoodRequest request)
-    {
-        Food food = new Food{
-            Name = request.Name,
-            Price = request.Price,
-        };
-
-        await _context.Foods.AddAsync(food);
-        await _context.SaveChangesAsync();
-
-        return food;
-    }
-
-    public async Task Delete(Guid id)
+    public async Task DeleteAsync(Guid id)
     {
         var food = await _context.Foods.FindAsync(id);
 
@@ -39,17 +48,17 @@ public class FoodService : IFoodService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<Food>> GetAll()
+    public async Task<IEnumerable<Food>> GetAllAsync()
     {
         return await _context.Foods.ToListAsync();
     }
 
-    public async Task<Food?> GetById(Guid id)
+    public async Task<Food?> GetByIdAsync(Guid id)
     {
         return await _context.Foods.FindAsync(id) ?? null;
     }
 
-    public async Task Update(Guid id, UpdateFoodRequest request)
+    public async Task UpdateAsync(Guid id, UpdateFoodRequest request)
     {
         var existingFood = await _context.Foods.FindAsync(id) ?? throw new KeyNotFoundException($"Food with ID {id} not found");
 

@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SelifyApi.Entities;
 using SelifyApi.Interfaces;
@@ -5,21 +7,16 @@ using SelifyApi.Requests;
 
 namespace SelifyApi.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
-public class FoodController : ControllerBase
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Route("api/v1/foods")]
+public class FoodsController(IFoodService foodService) : ApiController
 {
-    private readonly IFoodService _foodService;
-
-    public FoodController(IFoodService foodService)
-    {
-        _foodService = foodService;
-    }
+    private readonly IFoodService _foodService = foodService;
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Food>>> GetAllFoods()
     {
-        var foods = await _foodService.GetAll();
+        var foods = await _foodService.GetAllAsync();
 
         return Ok(foods);
     }
@@ -27,7 +24,7 @@ public class FoodController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Food>> GetFood(Guid id)
     {
-        var food = await _foodService.GetById(id);
+        var food = await _foodService.GetByIdAsync(id);
 
         if (food is null)
             return  NotFound("Requested food not found!");
@@ -38,7 +35,8 @@ public class FoodController : ControllerBase
     [HttpPost]
     public async Task<ActionResult> AddSingleFood([FromBody] CreateFoodRequest request)
     {
-        Food food = await _foodService.Add(request);
+        var user = HttpContext.User;
+        Food food = await _foodService.AddAsync(request, user);
 
         return CreatedAtAction(nameof(GetFood), new { id = food.Id }, food);
     }
@@ -47,8 +45,8 @@ public class FoodController : ControllerBase
     public async Task<ActionResult<Food>> UpdateSingleFood(Guid id, [FromBody] UpdateFoodRequest request)
     {
         try {
-            await _foodService.Update(id, request);
-            var food = await _foodService.GetById(id);
+            await _foodService.UpdateAsync(id, request);
+            var food = await _foodService.GetByIdAsync(id);
             return Ok(food);
         } catch (KeyNotFoundException ex) {
             return BadRequest(ex.Message);
@@ -60,7 +58,7 @@ public class FoodController : ControllerBase
     public async Task<ActionResult> DeleteSingleFood(Guid id)
     {
         try {
-            await _foodService.Delete(id);
+            await _foodService.DeleteAsync(id);
             return NoContent();
         } catch(KeyNotFoundException) {
             return BadRequest("Food with the given ID is not found");
