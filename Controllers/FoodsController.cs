@@ -4,63 +4,73 @@ using Microsoft.AspNetCore.Mvc;
 using SelifyApi.Entities;
 using SelifyApi.Interfaces;
 using SelifyApi.Requests;
+using SelifyApi.Responses;
 
 namespace SelifyApi.Controllers;
 
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [Route("api/v1/foods")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class FoodsController(IFoodService foodService) : ApiController
 {
-    private readonly IFoodService _foodService = foodService;
-
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Food>>> GetAllFoods()
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesErrorResponseType(typeof(UnauthorizedResult))]
+    public async Task<ActionResult<SelifyResponse<IEnumerable<Food>>>> GetAllFoods()
     {
-        var foods = await _foodService.GetAllAsync();
+        var foods = await foodService.GetAllAsync();
 
-        return Ok(foods);
+        return Ok(new SelifyResponse<IEnumerable<Food>>(
+            foods, "success", "All foods have been returned"
+        ));
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Food>> GetFood(Guid id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<SelifyResponse<Food>>> GetFood(Guid id)
     {
-        var food = await _foodService.GetByIdAsync(id);
+        var food = await foodService.GetByIdAsync(id);
 
         if (food is null)
-            return  NotFound("Requested food not found!");
+            return NotFound("Requested food not found!");
 
-        return Ok(food);
+        return Ok(new SelifyResponse<Food>(
+            food, "success", "Food details successfully fetched"
+        ));
     }
 
     [HttpPost]
     public async Task<ActionResult> AddSingleFood([FromBody] CreateFoodRequest request)
     {
         var user = HttpContext.User;
-        Food food = await _foodService.AddAsync(request, user);
+        Food food = await foodService.AddAsync(request, user);
 
         return CreatedAtAction(nameof(GetFood), new { id = food.Id }, food);
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:guid}")]
     public async Task<ActionResult<Food>> UpdateSingleFood(Guid id, [FromBody] UpdateFoodRequest request)
     {
-        try {
-            await _foodService.UpdateAsync(id, request);
-            var food = await _foodService.GetByIdAsync(id);
+        try
+        {
+            await foodService.UpdateAsync(id, request);
+            var food = await foodService.GetByIdAsync(id);
             return Ok(food);
-        } catch (KeyNotFoundException ex) {
+        }
+        catch (KeyNotFoundException ex)
+        {
             return BadRequest(ex.Message);
         }
-
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<ActionResult> DeleteSingleFood(Guid id)
     {
-        try {
-            await _foodService.DeleteAsync(id);
+        try
+        {
+            await foodService.DeleteAsync(id);
             return NoContent();
-        } catch(KeyNotFoundException) {
+        }
+        catch (KeyNotFoundException)
+        {
             return BadRequest("Food with the given ID is not found");
         }
     }
