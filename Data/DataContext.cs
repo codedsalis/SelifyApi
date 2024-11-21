@@ -3,16 +3,10 @@ using SelifyApi.Entities;
 
 namespace SelifyApi.Data;
 
-public class DataContext: DbContext
+public class DataContext(DbContextOptions<DataContext> options) : DbContext(options)
 {
-    public DataContext(DbContextOptions<DataContext> options) 
-        : base(options)
-    {
-        
-    }
-
-    public DbSet<Food> Foods { get; set; }
-    public DbSet<User> Users { get; set; }
+    public DbSet<Food> Foods { get; init; }
+    public DbSet<User> Users { get; init; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -6,5 +6,11 @@ public class AuthResponse
 
     public string Message { get; set; } = string.Empty;
 
-    public string? Token { get; set; } = null;
+    public Tokens? Tokens{ get; set; }
+}
+
+public class Tokens 
+{
+    public string AccessToken {get; set;} = string.Empty;
+    public string? RefreshToken {get; set;} = string.Empty;
 }

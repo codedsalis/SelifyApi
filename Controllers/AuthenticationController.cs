@@ -10,12 +10,10 @@ namespace SelifyApi.Controllers;
 [Route("api/v1/auth")]
 public class AuthenticationController(IAuthService authService) : ApiController
 {
-    private readonly IAuthService _authService = authService;
-
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegistrationRequest request)
     {
-        var isRegistered = await _authService.Register(request);
+        var isRegistered = await authService.Register(request);
 
         var response = new AuthResponse{
             Status = isRegistered ? "success" : "failed",
@@ -29,15 +27,28 @@ public class AuthenticationController(IAuthService authService) : ApiController
     [ProducesResponseType(typeof(AuthResponse), (int)HttpStatusCode.OK)]
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
     {
-        var token = await _authService.Login(request.Email, request.Password);
+        var token = await authService.Login(request.Email, request.Password);
 
         var authResponse = new AuthResponse
         {
             Status = "Success",
             Message = "Login Successful",
-            Token = token
+            Tokens = new Tokens()
+            {
+                // RefreshToken = "",
+                AccessToken = token,
+            }
         };
 
         return authResponse;
     }
+
+    // [HttpPost("refresh-token")]
+    // public Task<ActionResult> refreshToken()
+    // {
+    //     var token = await _authService.RefreshToken();
+    // }
+    // {
+
+    // }
 }
