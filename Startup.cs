@@ -1,5 +1,7 @@
 using System.Configuration;
 using System.Text;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 using Microsoft.AspNetCore.Identity;
@@ -61,6 +63,7 @@ public class Startup
                 Description = "Authorization",
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer"
             });
             options.AddSecurityRequirement(security);
         });
@@ -87,6 +90,14 @@ public class Startup
             // .AddDefaultTokenProviders();
 
         services.AddScoped<UserManager<User>>();
+        services.AddTransient<EmailService>();
+
+        services.AddHangfire(x =>
+            x.UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UsePostgreSqlStorage(Configuration.GetConnectionString("DefaultConnection"))
+        );
+        services.AddHangfireServer(x => x.SchedulePollingInterval = TimeSpan.FromSeconds(1));
 
         // services.AddIdentityApiEndpoints<ApplicationUser>()
         //     .AddEntityFrameworkStores<DataContext>();
@@ -104,6 +115,7 @@ public class Startup
             // endpoints.MapIdentityApi<ApplicationUser>();
             // endpoints.MapSwagger().RequireAuthorization();
         });
+        app.UseHangfireDashboard();
 
         // if (app.Environment.IsDevelopment())
         // {

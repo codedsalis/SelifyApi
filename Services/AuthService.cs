@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Hangfire;
 using Humanizer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,13 @@ using SelifyApi.Requests;
 
 namespace SelifyApi.Services;
 
-public class AuthService(DataContext context, UserManager<User> userManager, IJwtService jwtService, ILogger<AuthService> logger) : IAuthService
+public class AuthService(
+    DataContext context,
+    UserManager<User> userManager,
+    IJwtService jwtService,
+    IBackgroundJobClient jobClient,
+    EmailService emailService,
+    ILogger<AuthService> logger) : IAuthService
 {
     private readonly DataContext _context = context;
     private readonly UserManager<User> _userManager = userManager;
@@ -23,7 +30,8 @@ public class AuthService(DataContext context, UserManager<User> userManager, IJw
 
         var isValidPassword = await _userManager.CheckPasswordAsync(user, Password);
 
-        if (!isValidPassword) {
+        if (!isValidPassword)
+        {
             throw new ValidationException("Invalid credentials");
         }
 
@@ -35,7 +43,8 @@ public class AuthService(DataContext context, UserManager<User> userManager, IJw
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
 
-        if (user != null) {
+        if (user != null)
+        {
             throw new ValidationException("Email is already taken");
         }
 
@@ -55,7 +64,11 @@ public class AuthService(DataContext context, UserManager<User> userManager, IJw
         };
 
         var result = await _userManager.CreateAsync(newUser, request.Password);
-        // _logger.Log(LogLevel.Debug, "", result);
+        jobClient.Enqueue(() =>
+            emailService.SendEmailAsync(
+                newUser.Email, request.Name.ToString(), "Welcome to Selify"
+            )
+        );
 
         if (result.Succeeded)
         {
@@ -63,6 +76,7 @@ public class AuthService(DataContext context, UserManager<User> userManager, IJw
             // _jwtService.GenerateToken();
             return true;
         }
+
         _logger.LogError($"Email: {request.Email}");
         // _logger.LogError($"Error creating user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
 
